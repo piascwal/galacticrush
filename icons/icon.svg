@@ -1,0 +1,67 @@
+<svg xmlns="http://www.w3.org/2000/svg" viewBox="0 0 512 512" width="512" height="512">
+  <defs>
+    <radialGradient id="bg-glow-1" cx="18%" cy="8%" r="60%">
+      <stop offset="0%" stop-color="#16294a"/>
+      <stop offset="100%" stop-color="#16294a" stop-opacity="0"/>
+    </radialGradient>
+    <radialGradient id="bg-glow-2" cx="88%" cy="100%" r="55%">
+      <stop offset="0%" stop-color="#241239"/>
+      <stop offset="100%" stop-color="#241239" stop-opacity="0"/>
+    </radialGradient>
+    <linearGradient id="planet-fill" x1="0%" y1="0%" x2="100%" y2="100%">
+      <stop offset="0%" stop-color="#33e6ff"/>
+      <stop offset="55%" stop-color="#00b8d9"/>
+      <stop offset="100%" stop-color="#0a4f66"/>
+    </linearGradient>
+    <linearGradient id="ring-stroke" x1="0%" y1="0%" x2="100%" y2="0%">
+      <stop offset="0%" stop-color="#3ddc84" stop-opacity="0"/>
+      <stop offset="50%" stop-color="#8ff0c4"/>
+      <stop offset="100%" stop-color="#3ddc84" stop-opacity="0"/>
+    </linearGradient>
+    <linearGradient id="flame" x1="0%" y1="0%" x2="100%" y2="100%">
+      <stop offset="0%" stop-color="#ffe9b0"/>
+      <stop offset="45%" stop-color="#ffb020"/>
+      <stop offset="100%" stop-color="#ff5d3d"/>
+    </linearGradient>
+    <radialGradient id="planet-sheen" cx="34%" cy="28%" r="40%">
+      <stop offset="0%" stop-color="#ffffff" stop-opacity="0.65"/>
+      <stop offset="100%" stop-color="#ffffff" stop-opacity="0"/>
+    </radialGradient>
+    <filter id="soft-glow" x="-60%" y="-60%" width="220%" height="220%">
+      <feGaussianBlur stdDeviation="10" result="blur"/>
+      <feMerge>
+        <feMergeNode in="blur"/>
+        <feMergeNode in="SourceGraphic"/>
+      </feMerge>
+    </filter>
+  </defs>
+
+  <g>
+    <rect x="0" y="0" width="512" height="512" fill="#060911"/>
+    <rect x="0" y="0" width="512" height="512" fill="url(#bg-glow-1)"/>
+    <rect x="0" y="0" width="512" height="512" fill="url(#bg-glow-2)"/>
+
+    <circle cx="118" cy="96" r="3" fill="#e6ecf7" opacity="0.55"/>
+    <circle cx="392" cy="70" r="2.5" fill="#e6ecf7" opacity="0.4"/>
+    <circle cx="440" cy="150" r="2" fill="#e6ecf7" opacity="0.5"/>
+    <circle cx="80" cy="200" r="2" fill="#e6ecf7" opacity="0.35"/>
+    <circle cx="150" cy="60" r="2" fill="#e6ecf7" opacity="0.3"/>
+
+    <ellipse cx="255" cy="330" rx="150" ry="42" fill="none" stroke="url(#ring-stroke)" stroke-width="10" transform="rotate(-10 255 330)"/>
+
+    <circle cx="255" cy="330" r="112" fill="url(#planet-fill)" filter="url(#soft-glow)"/>
+    <circle cx="255" cy="330" r="112" fill="url(#planet-sheen)"/>
+
+    <ellipse cx="255" cy="330" rx="150" ry="42" fill="none" stroke="url(#ring-stroke)" stroke-width="10" transform="rotate(-10 255 330)" opacity="0.9" stroke-dasharray="0 236 236 0" clip-path="polygon(0 0, 100% 0, 100% 46%, 0 46%)"/>
+
+    <g transform="translate(348 176) rotate(43)" filter="url(#soft-glow)">
+      <path d="M0 -86 C 26 -60, 30 -14, 20 26 L -20 26 C -30 -14, -26 -60, 0 -86 Z" fill="#eef3fb"/>
+      <path d="M0 -86 C 26 -60, 30 -14, 20 26 L 2 26 C 6 -30, 4 -66, 0 -86 Z" fill="#c7d3e6"/>
+      <circle cx="0" cy="-30" r="12" fill="#0a4f66"/>
+      <circle cx="0" cy="-30" r="12" fill="none" stroke="#33e6ff" stroke-width="3"/>
+      <path d="M-20 8 L-46 32 L-16 26 Z" fill="#ff5d5d"/>
+      <path d="M20 8 L46 32 L16 26 Z" fill="#ff5d5d"/>
+      <path d="M-13 24 C -13 44, -4 60, 0 68 C 4 60, 13 44, 13 24 Z" fill="url(#flame)"/>
+    </g>
+  </g>
+</svg>
