@@ -9,18 +9,20 @@
   let tick = $state(0);
 
   onMount(() => {
-    const iv = setInterval(() => { tick++; }, 100);
+    const iv = setInterval(() => {
+      tick++;
+    }, 100);
     return () => clearInterval(iv);
   });
 
   const def = $derived(game.activePlanetDef);
   const ps = $derived(game.activePlanetState);
   const effectiveRate = $derived.by(() => {
-    tick; // dépendance explicite pour la ré-évaluation périodique
+    void tick; // dépendance explicite pour la ré-évaluation périodique
     return game.planetPassiveRate(def.id) + clickBoostRateFor(def.id);
   });
   const boosted = $derived.by(() => {
-    tick;
+    void tick;
     return clickBoostRateFor(def.id) > 0;
   });
 </script>

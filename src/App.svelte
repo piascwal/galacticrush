@@ -44,7 +44,9 @@
   $effect(() => {
     if (!victory.cinematicActive) return;
     appShaking = true;
-    const t = setTimeout(() => { appShaking = false; }, 520);
+    const t = setTimeout(() => {
+      appShaking = false;
+    }, 520);
     return () => clearTimeout(t);
   });
 </script>

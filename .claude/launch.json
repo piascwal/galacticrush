@@ -12,6 +12,10 @@
     {
       "name": "subpath-check",
       "url": "http://localhost:4401"
+    },
+    {
+      "name": "vite-dev2",
+      "url": "http://localhost:5184"
     }
   ]
 }

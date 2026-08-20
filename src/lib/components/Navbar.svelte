@@ -2,6 +2,7 @@
   import { PLANET_DEFS } from '../data/planets';
   import { game } from '../state/gameState.svelte';
   import { fmt, currencyFor } from '../format';
+  import { activateOnEnterOrSpace } from '../a11y';
 </script>
 
 <div id="navbar">
@@ -12,7 +13,10 @@
       class="nav-node"
       class:unlocked={ps.unlocked}
       class:active={def.id === game.activePlanetId}
+      role="button"
+      tabindex="0"
       onclick={() => game.selectPlanet(def.id)}
+      onkeydown={activateOnEnterOrSpace(() => game.selectPlanet(def.id))}
     >
       <div class="dot" style:background={def.gradient}></div>
       <div class="label">{def.name}</div>

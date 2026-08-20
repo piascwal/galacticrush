@@ -5,6 +5,7 @@
   import { fmtCur } from '../format';
   import { playUnlockTone } from '../audio';
   import * as economy from '../state/economy';
+  import { activateOnEnterOrSpace } from '../a11y';
 
   function buy(defKey: string): void {
     const def = RD_DEFS.find((d) => d.key === defKey);
@@ -19,12 +20,24 @@
     {@const payer = game.planetState(payerId)}
     {@const bought = game.rd[def.key]}
     {@const affordable = payer.energy >= def.cost}
-    <div class="card rd-card" class:bought class:disabled={!bought && !affordable} class:locked={!bought && !affordable} onclick={() => !bought && buy(def.key)}>
+    <div
+      class="card rd-card"
+      class:bought
+      class:disabled={!bought && !affordable}
+      class:locked={!bought && !affordable}
+      role="button"
+      tabindex="0"
+      onclick={() => !bought && buy(def.key)}
+      onkeydown={activateOnEnterOrSpace(() => !bought && buy(def.key))}
+    >
       {#if def.scope === 'global'}
         <span class="rd-badge global">🌐 GLOBAL</span>
       {:else}
         {@const planetDef = planetDefById(def.planetId!)}
-        <span class="rd-badge local"><span class="rd-badge-dot" style="background:{planetDef.glow}; box-shadow:0 0 5px {planetDef.glow};"></span>{planetDef.name.toUpperCase()}</span>
+        <span class="rd-badge local"
+          ><span class="rd-badge-dot" style="background:{planetDef.glow}; box-shadow:0 0 5px {planetDef.glow};"
+          ></span>{planetDef.name.toUpperCase()}</span
+        >
       {/if}
       <div class="info">
         <div class="name">{def.name}</div>

@@ -47,7 +47,9 @@
 
   onMount(() => {
     const timers: ReturnType<typeof setTimeout>[] = [];
-    const t = (fn: () => void, ms: number) => { timers.push(setTimeout(fn, ms)); };
+    const t = (fn: () => void, ms: number) => {
+      timers.push(setTimeout(fn, ms));
+    };
 
     dots = PLANET_DEFS.map((def, i) => ({
       id: i,
@@ -57,7 +59,7 @@
       startX: (Math.random() * 1.5 - 0.75) * (window.innerWidth / 2 + 120),
       startY: (Math.random() * 1.5 - 0.75) * (window.innerHeight / 2 + 120),
       angle: (i / PLANET_DEFS.length) * Math.PI * 2,
-      revealed: false
+      revealed: false,
     }));
     requestAnimationFrame(() => {
       dots = dots.map((d) => ({ ...d, revealed: true }));
@@ -66,13 +68,19 @@
     // ---- Phase 2 : le vaisseau vibre puis s'élance (à 3s) ----
     t(() => {
       showShip = true;
-      requestAnimationFrame(() => { shipAppear = true; });
-      t(() => { shipLaunch = true; }, 1080);
+      requestAnimationFrame(() => {
+        shipAppear = true;
+      });
+      t(() => {
+        shipLaunch = true;
+      }, 1080);
 
       // ---- Phase 3 : flash cosmique au moment où le vaisseau quitte l'écran (à 3s de plus) ----
       t(() => {
         showFlash = true;
-        requestAnimationFrame(() => { flashExpand = true; });
+        requestAnimationFrame(() => {
+          flashExpand = true;
+        });
 
         // ---- Phase 4 : le flash s'efface, le terminal apparaît ----
         t(() => {
@@ -80,14 +88,18 @@
           showConstellation = false;
           showShip = false;
           startTypewriter();
-          t(() => { showFlash = false; }, 950);
+          t(() => {
+            showFlash = false;
+          }, 950);
         }, 1000);
       }, 3000);
     }, 3000);
 
     function startTypewriter(): void {
       showTypewriter = true;
-      requestAnimationFrame(() => { typewriterShow = true; });
+      requestAnimationFrame(() => {
+        typewriterShow = true;
+      });
       let i = 0;
       const typeIv = setInterval(() => {
         i++;
@@ -97,7 +109,9 @@
           t(() => {
             elapsed = Date.now() - game.gameStartTime;
             showFinale = true;
-            requestAnimationFrame(() => { finaleShow = true; });
+            requestAnimationFrame(() => {
+              finaleShow = true;
+            });
             void loadFinaleLeaderboard();
           }, 500);
         }
@@ -135,14 +149,17 @@
       {@const cy = dot.revealed ? Math.sin(dot.angle) * r : dot.startY}
       <div
         class="constellation-dot"
-        style="width:{dot.size}px; height:{dot.size}px; background:{dot.gradient}; box-shadow:0 0 18px 4px {dot.glow}; opacity:{dot.revealed ? 1 : 0}; transform:translate(calc(-50% + {cx.toFixed(0)}px), calc(-50% + {cy.toFixed(0)}px));"
+        style="width:{dot.size}px; height:{dot.size}px; background:{dot.gradient}; box-shadow:0 0 18px 4px {dot.glow}; opacity:{dot.revealed
+          ? 1
+          : 0}; transform:translate(calc(-50% + {cx.toFixed(0)}px), calc(-50% + {cy.toFixed(0)}px));"
       ></div>
     {/each}
   {/if}
 
   {#if showShip}
     <div class="cinema-ship" class:appear={shipAppear} class:launch={shipLaunch}>
-      🚀<div class="ship-trail"></div>
+      🚀
+      <div class="ship-trail"></div>
     </div>
   {/if}
 

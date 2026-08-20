@@ -7,6 +7,7 @@
   import { ensureAudio, playClickTone } from '../audio';
   import { fmt } from '../format';
   import { registerClickContribution } from '../systems/clickBoost';
+  import { activateOnEnterOrSpace } from '../a11y';
   import { EARTH_CITY_SPOTS, CRACK_ANGLES, lerpColor } from '../systems/planetVisual';
 
   let stageEl: HTMLDivElement;
@@ -51,7 +52,7 @@
     return Array.from({ length: n }, (_, i) => ({
       angle: CRACK_ANGLES[i % CRACK_ANGLES.length]!,
       widthPct: 0.3 + (i % 3) * 0.08,
-      delay: i * 0.22 + 's'
+      delay: i * 0.22 + 's',
     }));
   });
 
@@ -64,7 +65,7 @@
     return {
       capped,
       opacity: (0.45 + capped * 0.1).toFixed(2),
-      particles: Array.from({ length: particleCount }, (_, i) => (i / particleCount) * Math.PI * 2)
+      particles: Array.from({ length: particleCount }, (_, i) => (i / particleCount) * Math.PI * 2),
     };
   });
 
@@ -74,16 +75,35 @@
   // Anneaux orbitaux de bâtiments — angle continu géré hors réactivité Svelte
   // (mutation directe du style à chaque frame, comme dans la version d'origine)
   // ---------------------------------------------------------
-  interface MarkerSpec { id: string; icon: string; isCapstone: boolean; }
-  interface MarkerPhysics { angle: number; speed: number; radiusX: number; radiusY: number; el: HTMLElement | null }
+  interface MarkerSpec {
+    id: string;
+    icon: string;
+    isCapstone: boolean;
+  }
+  interface MarkerPhysics {
+    angle: number;
+    speed: number;
+    radiusX: number;
+    radiusY: number;
+    el: HTMLElement | null;
+  }
 
   let markerSpecs: MarkerSpec[] = $state([]);
+  // Map non-réactive intentionnellement : l'angle de chaque marqueur est muté à
+  // chaque frame (60/s) directement sur le style de l'élément (voir orbitLoop),
+  // en dehors du système de réactivité Svelte pour éviter de déclencher un cycle
+  // de rendu par marqueur et par frame. Passer à SvelteMap annulerait ce gain.
+  // eslint-disable-next-line svelte/prefer-svelte-reactivity
   const physicsMap = new Map<string, MarkerPhysics>();
 
   function markerRef(node: HTMLElement, id: string) {
     const entry = physicsMap.get(id);
     if (entry) entry.el = node;
-    return { destroy() { physicsMap.delete(id); } };
+    return {
+      destroy() {
+        physicsMap.delete(id);
+      },
+    };
   }
 
   $effect(() => {
@@ -132,44 +152,91 @@
   const arcOffset = $derived((GAUGE_ARC_LEN * (1 - gauge.ratio)).toFixed(1));
 
   // ---------------------------------------------------------
-  // Particules (étincelles, escarbilles, click-pop) — DOM direct, transitoire
+  // Particules (étincelles, escarbilles, click-pop, mass driver) — rendues
+  // via des listes réactives (chaque particule se retire elle-même de la
+  // liste après sa durée de vie) plutôt que par manipulation DOM directe :
+  // ça laisse Svelte gérer la création/suppression des nœuds.
   // ---------------------------------------------------------
+  interface SparkParticle {
+    id: number;
+    x: number;
+    y: number;
+    color: string;
+    dx: string;
+    dy: string;
+    fall: string;
+    spin: string;
+  }
+  interface EmberParticle {
+    id: number;
+    x: number;
+    y: number;
+    ex: string;
+    ey: string;
+  }
+  interface ClickPop {
+    id: number;
+    x: number;
+    y: number;
+    text: string;
+    cls: string;
+  }
+  interface Streak {
+    id: number;
+    left: number;
+    top: number;
+    angleDeg: number;
+  }
+
+  let sparkParticles: SparkParticle[] = $state([]);
+  let emberParticles: EmberParticle[] = $state([]);
+  let clickPops: ClickPop[] = $state([]);
+  let streaks: Streak[] = $state([]);
+  let particleIdCounter = 0;
+
   function spawnSparkParticles(x: number, y: number): void {
     const color = def.glow;
     const count = 4 + Math.floor(Math.random() * 3);
+    const created: SparkParticle[] = [];
     for (let i = 0; i < count; i++) {
-      const p = document.createElement('div');
-      p.className = 'spark-particle';
       const angle = Math.PI + Math.random() * Math.PI;
       const speed = 30 + Math.random() * 45;
-      const dx = Math.cos(angle) * speed;
-      const dy = Math.sin(angle) * speed * 0.7;
-      p.style.setProperty('--dx', dx.toFixed(1) + 'px');
-      p.style.setProperty('--dy', dy.toFixed(1) + 'px');
-      p.style.setProperty('--fall', (70 + Math.random() * 55).toFixed(0) + 'px');
-      p.style.setProperty('--spin', (Math.random() * 180 - 90).toFixed(0) + 'deg');
-      p.style.left = x + 'px';
-      p.style.top = y + 'px';
-      p.style.background = color;
-      p.style.boxShadow = '0 0 5px ' + color;
-      stageEl.appendChild(p);
-      setTimeout(() => p.remove(), 900);
+      created.push({
+        id: particleIdCounter++,
+        x,
+        y,
+        color,
+        dx: (Math.cos(angle) * speed).toFixed(1) + 'px',
+        dy: (Math.sin(angle) * speed * 0.7).toFixed(1) + 'px',
+        fall: (70 + Math.random() * 55).toFixed(0) + 'px',
+        spin: (Math.random() * 180 - 90).toFixed(0) + 'deg',
+      });
     }
+    sparkParticles = [...sparkParticles, ...created];
+    const ids = new Set(created.map((p) => p.id));
+    setTimeout(() => {
+      sparkParticles = sparkParticles.filter((p) => !ids.has(p.id));
+    }, 900);
   }
 
   function spawnEmbers(x: number, y: number): void {
+    const created: EmberParticle[] = [];
     for (let i = 0; i < 6; i++) {
-      const ember = document.createElement('div');
-      ember.className = 'ember';
       const angle = Math.random() * Math.PI * 2;
       const dist = 18 + Math.random() * 24;
-      ember.style.left = x + 'px';
-      ember.style.top = y + 'px';
-      ember.style.setProperty('--ex', (Math.cos(angle) * dist).toFixed(1) + 'px');
-      ember.style.setProperty('--ey', (Math.sin(angle) * dist - 10).toFixed(1) + 'px');
-      stageEl.appendChild(ember);
-      setTimeout(() => ember.remove(), 650);
+      created.push({
+        id: particleIdCounter++,
+        x,
+        y,
+        ex: (Math.cos(angle) * dist).toFixed(1) + 'px',
+        ey: (Math.sin(angle) * dist - 10).toFixed(1) + 'px',
+      });
     }
+    emberParticles = [...emberParticles, ...created];
+    const ids = new Set(created.map((p) => p.id));
+    setTimeout(() => {
+      emberParticles = emberParticles.filter((p) => !ids.has(p.id));
+    }, 650);
   }
 
   function spawnClickPop(evt: { clientX: number; clientY: number } | null, val: number, isHot: boolean, isWarm: boolean): void {
@@ -180,13 +247,11 @@
       x = evt.clientX - rect.left;
       y = evt.clientY - rect.top;
     }
-    const pop = document.createElement('div');
-    pop.className = 'click-pop' + (isHot ? ' hot' : isWarm ? ' warm' : '');
-    pop.textContent = '+' + fmt(val);
-    pop.style.left = x + 'px';
-    pop.style.top = y + 'px';
-    stageEl.appendChild(pop);
-    setTimeout(() => pop.remove(), 1200);
+    const id = particleIdCounter++;
+    clickPops = [...clickPops, { id, x, y, text: '+' + fmt(val), cls: isHot ? 'hot' : isWarm ? 'warm' : '' }];
+    setTimeout(() => {
+      clickPops = clickPops.filter((p) => p.id !== id);
+    }, 1200);
     spawnSparkParticles(x, y);
     if (isHot) spawnEmbers(x, y);
   }
@@ -196,42 +261,16 @@
     const cx = rect.width / 2;
     const cy = rect.height / 2;
     const angle = Math.random() * Math.PI * 2;
-    const streak = document.createElement('div');
-    streak.className = 'streak';
     const startR = (planetEl?.offsetWidth || 180) / 2 + 6;
-    streak.style.left = cx + Math.cos(angle) * startR + 'px';
-    streak.style.top = cy + Math.sin(angle) * startR + 'px';
-    streak.style.transform = 'rotate(' + (angle * 180) / Math.PI + 'deg)';
-    stageEl.appendChild(streak);
-    let dist = startR;
-    const speed = 6;
-    const iv = setInterval(() => {
-      dist += speed;
-      streak.style.left = cx + Math.cos(angle) * dist + 'px';
-      streak.style.top = cy + Math.sin(angle) * dist + 'px';
-      streak.style.opacity = String(Math.max(0, 1 - (dist - startR) / 140));
-      if (dist - startR > 150) {
-        clearInterval(iv);
-        streak.remove();
-      }
-    }, 30);
+    const id = particleIdCounter++;
+    streaks = [
+      ...streaks,
+      { id, left: cx + Math.cos(angle) * startR, top: cy + Math.sin(angle) * startR, angleDeg: (angle * 180) / Math.PI },
+    ];
+    setTimeout(() => {
+      streaks = streaks.filter((s) => s.id !== id);
+    }, 760);
   }
-
-  // ---------------------------------------------------------
-  // Effet "première construction"
-  // ---------------------------------------------------------
-  $effect(() => {
-    const req = fx.firstBuild;
-    if (!req || !stageEl) return;
-    const el = document.createElement('div');
-    el.className = 'first-build-fx';
-    el.innerHTML =
-      '<div class="first-build-ring"></div>' +
-      `<div class="first-build-icon">${req.icon}</div>` +
-      `<div class="first-build-text">${req.name} déployée !</div>`;
-    stageEl.appendChild(el);
-    setTimeout(() => el.remove(), 1650);
-  });
 
   // ---------------------------------------------------------
   // Clic — extraction manuelle d'énergie
@@ -263,7 +302,9 @@
 
   onMount(() => {
     requestAnimationFrame(orbitLoop);
-    const gaugeIv = setInterval(() => { gauge.tick(!!game.activeBonus?.def.forceHot); }, 100);
+    const gaugeIv = setInterval(() => {
+      gauge.tick(!!game.activeBonus?.def.forceHot);
+    }, 100);
     const ambianceIv = setInterval(() => {
       if (game.activePlanetId === 'moon' && (game.planetState('moon').buildings.railgun ?? 0) > 0) {
         spawnMassDriverStreak();
@@ -280,7 +321,16 @@
   });
 </script>
 
-<div bind:this={stageEl} id="stage" ontouchstart={onTouchStart} onclick={onClick}>
+<div
+  bind:this={stageEl}
+  id="stage"
+  role="button"
+  tabindex="0"
+  aria-label="Cliquer sur l'astre pour extraire de l'énergie"
+  ontouchstart={onTouchStart}
+  onclick={onClick}
+  onkeydown={activateOnEnterOrSpace(() => handleClick(null))}
+>
   <div id="atmosphere-halo" style="opacity:{haloOpacity}; filter:blur({haloBlur}); transform:scale({haloScale});"></div>
   <div id="orbit-layer">
     {#each markerSpecs as m (m.id)}
@@ -288,7 +338,10 @@
     {/each}
     {#if stargate}
       {@const ringSize = (planetEl?.offsetWidth || 180) * (1.35 + stargate.capped * 0.12)}
-      <div class="stargate-ring" style="width:{ringSize}px; height:{ringSize}px; left:50%; top:50%; transform:translate(-50%,-50%); opacity:{stargate.opacity};"></div>
+      <div
+        class="stargate-ring"
+        style="width:{ringSize}px; height:{ringSize}px; left:50%; top:50%; transform:translate(-50%,-50%); opacity:{stargate.opacity};"
+      ></div>
       {#each stargate.particles as angle, i (i)}
         {@const pr = ringSize / 2}
         <div class="gate-particle" style="left:calc(50% + {Math.cos(angle) * pr}px); top:calc(50% + {Math.sin(angle) * pr}px);"></div>
@@ -304,7 +357,11 @@
         <div class="haze-layer" style="opacity:{terraform.hazeOpacity};"></div>
       {/if}
       {#each crackLines as crack, i (i)}
-        <div class="crack-line" style="width:{(planetEl?.offsetWidth || 180) * crack.widthPct}px; transform:rotate({crack.angle}deg); animation-delay:{crack.delay};"></div>
+        <div
+          class="crack-line"
+          style="width:{(planetEl?.offsetWidth || 180) *
+            crack.widthPct}px; transform:rotate({crack.angle}deg); animation-delay:{crack.delay};"
+        ></div>
       {/each}
     </div>
   </div>
@@ -312,7 +369,15 @@
   <div id="click-gauge" class:warm={gauge.warm} class:hot={gauge.hot}>
     <svg class="gauge-svg" viewBox="0 0 120 70" width="100" height="58">
       <path d="M8,64 A52,52 0 0 1 112,64" fill="none" stroke="rgba(255,255,255,.15)" stroke-width="7" stroke-linecap="round" />
-      <path d="M8,64 A52,52 0 0 1 112,64" fill="none" stroke="url(#gaugeGrad)" stroke-width="7" stroke-linecap="round" stroke-dasharray={GAUGE_ARC_LEN} stroke-dashoffset={arcOffset} />
+      <path
+        d="M8,64 A52,52 0 0 1 112,64"
+        fill="none"
+        stroke="url(#gaugeGrad)"
+        stroke-width="7"
+        stroke-linecap="round"
+        stroke-dasharray={GAUGE_ARC_LEN}
+        stroke-dashoffset={arcOffset}
+      />
       <defs>
         <linearGradient id="gaugeGrad" x1="0" y1="0" x2="1" y2="0">
           <stop offset="0" stop-color="#00d9ff" />
@@ -349,5 +414,28 @@
   {/if}
   {#if comet.flash}
     <div class="comet-flash" style="left:{comet.flash.x}px; top:{comet.flash.y}px;"></div>
+  {/if}
+
+  {#each streaks as s (s.id)}
+    <div class="streak" style="left:{s.left}px; top:{s.top}px; --angle:{s.angleDeg}deg;"></div>
+  {/each}
+  {#each sparkParticles as p (p.id)}
+    <div
+      class="spark-particle"
+      style="left:{p.x}px; top:{p.y}px; background:{p.color}; box-shadow:0 0 5px {p.color}; --dx:{p.dx}; --dy:{p.dy}; --fall:{p.fall}; --spin:{p.spin};"
+    ></div>
+  {/each}
+  {#each emberParticles as p (p.id)}
+    <div class="ember" style="left:{p.x}px; top:{p.y}px; --ex:{p.ex}; --ey:{p.ey};"></div>
+  {/each}
+  {#each clickPops as p (p.id)}
+    <div class="click-pop {p.cls}" style="left:{p.x}px; top:{p.y}px;">{p.text}</div>
+  {/each}
+  {#if fx.firstBuild}
+    <div class="first-build-fx">
+      <div class="first-build-ring"></div>
+      <div class="first-build-icon">{fx.firstBuild.icon}</div>
+      <div class="first-build-text">{fx.firstBuild.name} déployée !</div>
+    </div>
   {/if}
 </div>

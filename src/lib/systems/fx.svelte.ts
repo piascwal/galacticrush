@@ -13,7 +13,11 @@ class FxBus {
   firstBuild: FirstBuildFxRequest | null = $state(null);
 
   triggerFirstBuild(icon: string, name: string): void {
-    this.firstBuild = { id: nextId++, icon, name };
+    const req = { id: nextId++, icon, name };
+    this.firstBuild = req;
+    setTimeout(() => {
+      if (this.firstBuild?.id === req.id) this.firstBuild = null;
+    }, 1650);
   }
 }
 

@@ -4,6 +4,7 @@
   import { playBuildTone } from '../audio';
   import { fx } from '../systems/fx.svelte';
   import { victory } from '../systems/victory.svelte';
+  import { activateOnEnterOrSpace } from '../a11y';
 
   const def = $derived(game.activePlanetDef);
   const ps = $derived(game.activePlanetState);
@@ -24,7 +25,15 @@
     {@const owned = ps.buildings[b.key] ?? 0}
     {@const cost = game.buildingCost(b, owned)}
     {@const affordable = ps.energy >= cost}
-    <div class="card" class:disabled={!affordable} class:owned-highlight={owned > 0} onclick={() => buy(b.key)}>
+    <div
+      class="card"
+      class:disabled={!affordable}
+      class:owned-highlight={owned > 0}
+      role="button"
+      tabindex="0"
+      onclick={() => buy(b.key)}
+      onkeydown={activateOnEnterOrSpace(() => buy(b.key))}
+    >
       <div class="icon-badge">{b.icon}</div>
       <div class="info">
         <div class="name">{b.name}</div>

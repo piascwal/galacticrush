@@ -4,6 +4,7 @@
   import { fmtCur } from '../format';
   import { playUnlockTone } from '../audio';
   import { travel } from '../systems/travel.svelte';
+  import { activateOnEnterOrSpace } from '../a11y';
 
   function unlock(def: (typeof PLANET_DEFS)[number]): void {
     if (def.unlockFrom === null) return;
@@ -18,7 +19,13 @@
 {#each PLANET_DEFS as def (def.id)}
   {@const ps = game.planetState(def.id)}
   {#if ps.unlocked}
-    <div class="card owned-highlight" onclick={() => game.selectPlanet(def.id)}>
+    <div
+      class="card owned-highlight"
+      role="button"
+      tabindex="0"
+      onclick={() => game.selectPlanet(def.id)}
+      onkeydown={activateOnEnterOrSpace(() => game.selectPlanet(def.id))}
+    >
       <div class="info">
         <div class="name">{def.name}</div>
         <div class="desc">Clic x{def.clickMult} · Autonomie {game.planetAutonomyPct(def.id)}%</div>
@@ -33,7 +40,14 @@
     {@const source = def.unlockFrom ? game.planetState(def.unlockFrom) : null}
     {@const affordable = !!source && source.energy >= cost}
     {@const sourceDef = def.unlockFrom ? planetDefById(def.unlockFrom) : null}
-    <div class="card" class:disabled={!affordable} onclick={() => unlock(def)}>
+    <div
+      class="card"
+      class:disabled={!affordable}
+      role="button"
+      tabindex="0"
+      onclick={() => unlock(def)}
+      onkeydown={activateOnEnterOrSpace(() => unlock(def))}
+    >
       <div class="info">
         <div class="name">{def.name}</div>
         <div class="desc">Clic x{def.clickMult} · Payé depuis {sourceDef?.name}</div>

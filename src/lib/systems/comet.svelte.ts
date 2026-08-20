@@ -88,10 +88,27 @@ class CometSystem {
     const margin = 60;
     const side = Math.floor(Math.random() * 4);
     let sx: number, sy: number, ex: number, ey: number;
-    if (side === 0) { sx = -margin; sy = Math.random() * h; ex = w + margin; ey = Math.random() * h; }
-    else if (side === 1) { sx = w + margin; sy = Math.random() * h; ex = -margin; ey = Math.random() * h; }
-    else if (side === 2) { sx = Math.random() * w; sy = -margin; ex = Math.random() * w; ey = h + margin; }
-    else { sx = Math.random() * w; sy = h + margin; ex = Math.random() * w; ey = -margin; }
+    if (side === 0) {
+      sx = -margin;
+      sy = Math.random() * h;
+      ex = w + margin;
+      ey = Math.random() * h;
+    } else if (side === 1) {
+      sx = w + margin;
+      sy = Math.random() * h;
+      ex = -margin;
+      ey = Math.random() * h;
+    } else if (side === 2) {
+      sx = Math.random() * w;
+      sy = -margin;
+      ex = Math.random() * w;
+      ey = h + margin;
+    } else {
+      sx = Math.random() * w;
+      sy = h + margin;
+      ex = Math.random() * w;
+      ey = -margin;
+    }
 
     const angle = (Math.atan2(ey - sy, ex - sx) * 180) / Math.PI;
     const duration = 3 + Math.random() * 1.5;
@@ -99,13 +116,16 @@ class CometSystem {
     this.#collected = false;
     this.active = { id: nextId++, sx, sy, ex, ey, angle, duration };
 
-    this.#timeoutId = setTimeout(() => {
-      if (!this.#collected) {
-        this.active = null;
-        this.#el = null;
-        this.scheduleNext();
-      }
-    }, duration * 1000 + 100);
+    this.#timeoutId = setTimeout(
+      () => {
+        if (!this.#collected) {
+          this.active = null;
+          this.#el = null;
+          this.scheduleNext();
+        }
+      },
+      duration * 1000 + 100,
+    );
   }
 
   tryCollectAt(clientX: number, clientY: number): boolean {

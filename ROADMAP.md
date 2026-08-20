@@ -14,17 +14,17 @@ une app mobile — sans jamais bloquer la publication de nouvelles fonctionnalit
 
 ## 2. Stack cible
 
-| Sujet | Choix | Pourquoi |
-|---|---|---|
-| Build | **Vite** | zero-config, TS natif, dev server instantané, plugin PWA officiel |
-| Langage | **TypeScript strict** (`strict: true`, `noUncheckedIndexedAccess`, `noImplicitOverride`) | le cœur du jeu est du calcul (coûts, taux, offline progress) — le typage évite la classe de bugs la plus fréquente dans ce genre d'idle game |
-| UI | DOM direct (pas de framework lourd) | le jeu est déjà pensé "manipulation DOM ciblée" ; introduire React/Vue serait un coût de réécriture sans bénéfice proportionné tant que l'UI reste simple |
-| État | petit store maison typé (`GameState` + reducers purs) | permet de tester la logique indépendamment du DOM |
-| Style | CSS modules, variables déjà en place | pas besoin de Tailwind, le design system existant (`--accent`, `--energy`, etc.) est déjà cohérent |
-| Tests | **Vitest** (logique) + **Playwright** (parcours clé : clic, achat, save/load) | la logique économique est la partie la plus fragile aux régressions |
-| Qualité | ESLint (`typescript-eslint` strict) + Prettier + Husky/lint-staged | bloque les erreurs avant le commit |
-| CI | GitHub Actions : lint + typecheck + test sur chaque push/PR | déjà amorcé avec le workflow de déploiement |
-| Sauvegarde | schéma de save **versionné** + fonctions de migration | indispensable dès qu'on change la forme du `GameState` en prod |
+| Sujet      | Choix                                                                                    | Pourquoi                                                                                                                                                  |
+| ---------- | ---------------------------------------------------------------------------------------- | --------------------------------------------------------------------------------------------------------------------------------------------------------- |
+| Build      | **Vite**                                                                                 | zero-config, TS natif, dev server instantané, plugin PWA officiel                                                                                         |
+| Langage    | **TypeScript strict** (`strict: true`, `noUncheckedIndexedAccess`, `noImplicitOverride`) | le cœur du jeu est du calcul (coûts, taux, offline progress) — le typage évite la classe de bugs la plus fréquente dans ce genre d'idle game              |
+| UI         | **Svelte 5** (runes)                                                                     | compile vers du DOM proche de ce qui existait déjà, transitions intégrées, bundle minuscule (important pour le futur wrapping Capacitor) — voir discussion du 2026-08-20                                |
+| État       | store typé en classes `$state` (`gameState.svelte.ts`) + logique pure dans `economy.ts`  | permet de tester la logique indépendamment du DOM et de Svelte                                                                                            |
+| Style      | un seul `app.css` global, fidèle à l'original                                           | pas besoin de Tailwind, le design system existant (`--accent`, `--energy`, etc.) est déjà cohérent ; CSS scopé par composant repoussé à plus tard          |
+| Tests      | **Vitest** (logique) — fait pour `economy.ts` ; Playwright (parcours clé) à ajouter       | la logique économique est la partie la plus fragile aux régressions                                                                                       |
+| Qualité    | ESLint (`typescript-eslint` strict + `eslint-plugin-svelte`) + Prettier — fait            | bloque les erreurs avant le commit ; `npm run lint` / `npm run format`                                                                                    |
+| CI         | GitHub Actions : lint + typecheck + test + build sur chaque push/PR — fait                | `ci.yml` (branches/PR) et `deploy.yml` (main, build + déploiement)                                                                                        |
+| Sauvegarde | schéma de save **versionné** + fonctions de migration                                    | indispensable dès qu'on change la forme du `GameState` en prod                                                                                            |
 
 ## 3. Migration incrémentale
 
@@ -36,14 +36,19 @@ une app mobile — sans jamais bloquer la publication de nouvelles fonctionnalit
   (`state/`, `systems/`, `components/`). Le CSS reste volontairement global (un seul
   `app.css`, fidèle à l'original) plutôt que scopé composant par composant, pour
   limiter le risque de régression visuelle sur ce premier passage.
-- **Étape 4** : tests unitaires sur la logique économique (`economy.ts` est déjà
-  écrit comme des fonctions pures prenant l'état en paramètre — prêt à tester avec
-  Vitest, mais les tests eux-mêmes restent à écrire).
-- **Étape 5 — partiellement fait** : le workflow de déploiement build désormais le
-  projet (`npm run check` + `npm run build`) avant de publier `dist/`. Il manque
-  encore le lint (ESLint + Prettier) et l'exécution des futurs tests dans la CI.
+- **Étape 4 — fait pour la logique économique** : `economy.test.ts` (Vitest, 17 tests)
+  couvre les coûts, la production, l'autonomie, la valeur de clic et leurs
+  interactions avec les bonus/recherches. Manque encore : tests e2e (Playwright) sur
+  les parcours clés (achat, déblocage planète, victoire), et il n'y a toujours pas de
+  sauvegarde persistante à tester (le jeu n'a pas de save/load — reset à chaque
+  rechargement, comme dans l'original).
+- **Étape 5 — fait** : `deploy.yml` (push sur `main`) et `ci.yml` (PR/branches) font
+  tous les deux typecheck + lint + test + build avant de publier ou de merger.
 - **Étape 6** : PWA complète via `vite-plugin-pwa` (service worker, cache offline,
   installable) — le manifest et les icônes sont déjà prêts pour ça.
+- **Bonus non prévu initialement** : accessibilité clavier des éléments interactifs
+  (cartes, onglets, astre cliquable — rôle ARIA + activation Entrée/Espace + Échap
+  pour fermer les overlays), corrigée en même temps que le lint la révélait.
 
 Chaque étape est un PR indépendant qui laisse le jeu jouable à tout moment.
 
@@ -64,7 +69,7 @@ maintenant.
 2. `npx cap add ios` / `npx cap add android`
 3. `capacitor.config.ts` → `webDir: 'dist'`
 4. Génération des icônes/splash natifs via `@capacitor/assets`, à partir des sources
-   déjà prêtes dans `icons/icon.svg` et `icons/icon-maskable.svg`
+   déjà prêtes dans `public/icons/icon.svg` et `public/icons/icon-maskable.svg`
 5. Remplacer `localStorage` par `@capacitor/preferences` pour une sauvegarde fiable
    côté natif (localStorage peut être purgé par l'OS sur mobile)
 6. Distribution : TestFlight (iOS) et piste de test interne (Android), puis stores
@@ -79,7 +84,7 @@ maintenant.
 
 ## 6. Priorisation suggérée
 
-1. Étapes 1 → 2 (Vite + TS strict + données typées) : le plus gros gain de sécurité
-   pour le plus petit effort.
-2. Étape 4 (tests sur la logique économique) avant toute grosse feature.
+1. ~~Étapes 1 → 2 (Vite + TS strict + données typées)~~ — fait.
+2. ~~Étape 4 (tests sur la logique économique)~~ — fait pour `economy.ts`.
 3. Étape 6 (PWA) + plan mobile Capacitor : quand le besoin "app mobile" devient concret.
+4. Tests e2e (Playwright) sur les parcours clés, avant d'ajouter de grosses features.

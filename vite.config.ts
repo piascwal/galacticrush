@@ -1,5 +1,5 @@
-import { defineConfig } from 'vite'
-import { svelte } from '@sveltejs/vite-plugin-svelte'
+import { defineConfig } from 'vite';
+import { svelte } from '@sveltejs/vite-plugin-svelte';
 
 // https://vite.dev/config/
 export default defineConfig({
@@ -7,4 +7,4 @@ export default defineConfig({
   // project page) et pas à la racine du domaine.
   base: './',
   plugins: [svelte()],
-})
+});

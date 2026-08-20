@@ -14,9 +14,12 @@ de la migration et le plan mobile (Capacitor).
 
 ```bash
 npm install
-npm run dev      # serveur de dev
-npm run check    # typecheck (svelte-check + tsc)
-npm run build    # build de production dans dist/
+npm run dev         # serveur de dev
+npm run check       # typecheck (svelte-check + tsc)
+npm run test        # tests unitaires (Vitest)
+npm run lint        # ESLint + Prettier --check
+npm run format      # Prettier --write
+npm run build       # build de production dans dist/
 ```
 
 L'ancienne version monolithique (avant migration Vite/Svelte) reste disponible pour
