@@ -1105,6 +1105,8 @@
   const COMET_MAX_DELAY_MS = 180000; // 3 min
   let cometTimeoutId = null;
   let bonusTickerStarted = false;
+  let activeCometEl = null;
+  let activeCometCollected = false;
 
   function scheduleNextComet(){
     if (cometTimeoutId) clearTimeout(cometTimeoutId);
@@ -1134,19 +1136,50 @@
     comet.style.setProperty('--angle', angle.toFixed(1) + 'deg');
     comet.style.setProperty('--duration', duration.toFixed(2) + 's');
     document.body.appendChild(comet);
+    activeCometEl = comet;
+    activeCometCollected = false;
 
-    let collected = false;
-    comet.addEventListener('click', function(e){
-      e.stopPropagation();
-      if (collected) return;
-      collected = true;
-      collectComet(comet, e.clientX, e.clientY);
-    });
     setTimeout(function(){
-      if (!collected && comet.parentNode) comet.remove();
-      if (!collected) scheduleNextComet();
+      if (activeCometEl === comet && !activeCometCollected){
+        if (comet.parentNode) comet.remove();
+        activeCometEl = null;
+        scheduleNextComet();
+      }
     }, duration * 1000 + 100);
   }
+
+  // La comète a une hitbox visuelle minuscule (14px) et se déplace en continu :
+  // on lui donne une marge de tolérance généreuse et on l'intercepte en phase de
+  // capture (avant le listener de #stage) pour qu'un clic/tap proche compte
+  // toujours pour la comète en priorité, jamais pour le clic du jeu en dessous.
+  const COMET_HIT_TOLERANCE_PX = 26;
+  function tryCollectCometAt(clientX, clientY){
+    if (!activeCometEl || activeCometCollected) return false;
+    const rect = activeCometEl.getBoundingClientRect();
+    const cx = rect.left + rect.width / 2;
+    const cy = rect.top + rect.height / 2;
+    const hitRadius = rect.width / 2 + COMET_HIT_TOLERANCE_PX;
+    const dx = clientX - cx, dy = clientY - cy;
+    if (dx * dx + dy * dy > hitRadius * hitRadius) return false;
+    activeCometCollected = true;
+    const comet = activeCometEl;
+    activeCometEl = null;
+    collectComet(comet, clientX, clientY);
+    return true;
+  }
+  document.addEventListener('touchstart', function(e){
+    const touch = e.touches[0];
+    if (touch && tryCollectCometAt(touch.clientX, touch.clientY)){
+      e.preventDefault();
+      e.stopPropagation();
+    }
+  }, { capture:true, passive:false });
+  document.addEventListener('click', function(e){
+    if (tryCollectCometAt(e.clientX, e.clientY)){
+      e.preventDefault();
+      e.stopPropagation();
+    }
+  }, { capture:true });
 
   function collectComet(comet, clientX, clientY){
     comet.remove();
