@@ -5,20 +5,31 @@ travers le système solaire. Jouable directement dans le navigateur, installable
 
 ▶️ https://piascwal.github.io/galacticrush/
 
+## Stack
+
+Vite + Svelte 5 + TypeScript strict. Voir [ROADMAP.md](./ROADMAP.md) pour le détail
+de la migration et le plan mobile (Capacitor).
+
 ## Développement
 
-Le jeu est pour l'instant un site statique (`index.html`), sans étape de build.
-
 ```bash
-npx serve .
+npm install
+npm run dev      # serveur de dev
+npm run check    # typecheck (svelte-check + tsc)
+npm run build    # build de production dans dist/
 ```
+
+L'ancienne version monolithique (avant migration Vite/Svelte) reste disponible pour
+référence dans [legacy/galactic-harvest-classic.html](./legacy/galactic-harvest-classic.html).
 
 ## Déploiement
 
 Chaque push sur `main` déclenche le workflow `.github/workflows/deploy.yml`, qui
-publie le contenu du dépôt sur GitHub Pages.
+build le projet et publie `dist/` sur GitHub Pages.
 
-À faire une seule fois côté GitHub : **Settings → Pages → Source: GitHub Actions**.
+À faire une seule fois côté GitHub : **Settings → Pages → Source: GitHub Actions**
+(indispensable depuis l'introduction de l'étape de build — un déploiement "Deploy from
+a branch" servirait le code source non compilé).
 
 ## Roadmap
 

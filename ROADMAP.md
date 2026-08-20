@@ -30,20 +30,18 @@ une app mobile — sans jamais bloquer la publication de nouvelles fonctionnalit
 
 - **Étape 0 — fait** : dépôt Git, icônes (favicon + PWA + mobile), déploiement
   GitHub Pages via Actions.
-- **Étape 1** : initialiser Vite + TS strict à côté du code existant. Basculer le CSS
-  du `<style>` inline vers des fichiers `.css` importés. Renommer le script en `.ts`
-  en isolant les zones non encore typées (fichier par fichier, pas de `any` global).
-- **Étape 2** : extraire les données de jeu (définitions planètes, bâtiments, coûts)
-  dans des fichiers TS avec interfaces (`PlanetDef`, `BuildingDef`, ...). C'est la
-  partie la plus mécanique et la plus rentable à typer en premier.
-- **Étape 3** : découper le monolithe en modules avec des frontières claires :
-  `state/` (logique pure, testable), `render/` (mise à jour DOM), `systems/`
-  (boucles de jeu : production, autonomie, événements cosmiques), `ui/` (handlers).
-- **Étape 4** : tests unitaires sur la logique économique (progression offline,
-  coûts exponentiels, déblocages) — c'est la zone où une régression silencieuse
-  coûte le plus cher (perte de progression joueur).
-- **Étape 5** : CI complète (lint + typecheck + test) ; le workflow de déploiement
-  passe de "copier le repo tel quel" à `npm run build` puis publication de `dist/`.
+- **Étapes 1 à 3 — fait** : Vite + Svelte 5 + TypeScript strict. Données de jeu
+  typées (`PlanetDef`, `BuildingDef`, `RdDef`, ...), logique économique pure et
+  testable dans `src/lib/state/economy.ts`, monolithe découpé en composants Svelte
+  (`state/`, `systems/`, `components/`). Le CSS reste volontairement global (un seul
+  `app.css`, fidèle à l'original) plutôt que scopé composant par composant, pour
+  limiter le risque de régression visuelle sur ce premier passage.
+- **Étape 4** : tests unitaires sur la logique économique (`economy.ts` est déjà
+  écrit comme des fonctions pures prenant l'état en paramètre — prêt à tester avec
+  Vitest, mais les tests eux-mêmes restent à écrire).
+- **Étape 5 — partiellement fait** : le workflow de déploiement build désormais le
+  projet (`npm run check` + `npm run build`) avant de publier `dist/`. Il manque
+  encore le lint (ESLint + Prettier) et l'exécution des futurs tests dans la CI.
 - **Étape 6** : PWA complète via `vite-plugin-pwa` (service worker, cache offline,
   installable) — le manifest et les icônes sont déjà prêts pour ça.
 

@@ -4,6 +4,10 @@
     {
       "name": "static-preview",
       "url": "http://localhost:4322"
+    },
+    {
+      "name": "vite-dev",
+      "url": "http://localhost:5183"
     }
   ]
 }
