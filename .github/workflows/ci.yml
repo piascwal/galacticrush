@@ -25,7 +25,13 @@ jobs:
         run: npm run check
 
       - name: Lint
-        run: npm run lint
+        run: |
+          npm run lint > lint-output.txt 2>&1 || {
+            echo "::error::npm run lint failed:%0A$(sed 's/%/%25/g' lint-output.txt | sed ':a;N;$!ba;s/\n/%0A/g')"
+            cat lint-output.txt
+            exit 1
+          }
+          cat lint-output.txt
 
       - name: Test
         run: npm run test
