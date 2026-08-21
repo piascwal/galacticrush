@@ -2,7 +2,6 @@
   import { onMount } from 'svelte';
   import { game } from '../state/gameState.svelte';
   import { ClickGauge, GAUGE_ARC_LEN, getSpeedMultiplier } from '../systems/gauge.svelte';
-  import { comet } from '../systems/comet.svelte';
   import { fx } from '../systems/fx.svelte';
   import { ensureAudio, playClickTone } from '../audio';
   import { fmt } from '../format';
@@ -12,7 +11,6 @@
 
   let stageEl: HTMLDivElement;
   let planetEl: HTMLDivElement | undefined = $state();
-  let cometElBinding: HTMLDivElement | null = $state(null);
 
   const def = $derived(game.activePlanetDef);
   const ps = $derived(game.activePlanetState);
@@ -112,7 +110,6 @@
     const planetSize = planetEl?.offsetWidth || 180;
     const lastIndex = d.buildings.length - 1;
     const specs: MarkerSpec[] = [];
-    physicsMap.clear();
     d.buildings.forEach((b, index) => {
       const owned = state.buildings[b.key] ?? 0;
       if (owned <= 0) return;
@@ -124,9 +121,25 @@
       for (let k = 0; k < count; k++) {
         const id = `${b.key}-${k}`;
         specs.push({ id, icon: b.icon, isCapstone });
-        physicsMap.set(id, { angle: (k / count) * Math.PI * 2, speed, radiusX, radiusY, el: null });
+        // Un marqueur dont l'id existe déjà (ex: on achète un 2e exemplaire du
+        // même bâtiment, ce qui ajoute un nouvel id sans recréer les
+        // précédents) garde son élément DOM lié : `use:markerRef` ne se
+        // redéclenche pas sur un nœud réutilisé par la keyed-each, donc vider
+        // la map ici perdait `.el` pour tous les marqueurs déjà affichés et
+        // les figeait définitivement (c'était le bug).
+        const existing = physicsMap.get(id);
+        if (existing) {
+          existing.speed = speed;
+          existing.radiusX = radiusX;
+          existing.radiusY = radiusY;
+        } else {
+          physicsMap.set(id, { angle: (k / count) * Math.PI * 2, speed, radiusX, radiusY, el: null });
+        }
       }
     });
+    for (const id of [...physicsMap.keys()]) {
+      if (!specs.some((s) => s.id === id)) physicsMap.delete(id);
+    }
     markerSpecs = specs;
   });
 
@@ -315,10 +328,6 @@
       clearInterval(ambianceIv);
     };
   });
-
-  $effect(() => {
-    comet.bindElement(cometElBinding);
-  });
 </script>
 
 <div
@@ -403,18 +412,6 @@
       <span class="gauge-label">C/S</span>
     </div>
   </div>
-
-  {#if comet.active}
-    {@const c = comet.active}
-    <div
-      bind:this={cometElBinding}
-      class="cosmic-comet"
-      style="--sx:{c.sx}px; --sy:{c.sy}px; --ex:{c.ex}px; --ey:{c.ey}px; --angle:{c.angle}deg; --duration:{c.duration}s;"
-    ></div>
-  {/if}
-  {#if comet.flash}
-    <div class="comet-flash" style="left:{comet.flash.x}px; top:{comet.flash.y}px;"></div>
-  {/if}
 
   {#each streaks as s (s.id)}
     <div class="streak" style="left:{s.left}px; top:{s.top}px; --angle:{s.angleDeg}deg;"></div>

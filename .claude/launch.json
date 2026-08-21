@@ -16,6 +16,10 @@
     {
       "name": "vite-dev2",
       "url": "http://localhost:5184"
+    },
+    {
+      "name": "vite-dev3",
+      "url": "http://localhost:5185"
     }
   ]
 }

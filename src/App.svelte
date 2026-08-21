@@ -13,6 +13,7 @@
   import NavPanel from './lib/components/NavPanel.svelte';
   import RdPanel from './lib/components/RdPanel.svelte';
   import RocketOverlay from './lib/components/RocketOverlay.svelte';
+  import CosmicComet from './lib/components/CosmicComet.svelte';
   import BonusBanner from './lib/components/BonusBanner.svelte';
   import VictoryCinematic from './lib/components/VictoryCinematic.svelte';
   import { game } from './lib/state/gameState.svelte';
@@ -52,6 +53,7 @@
 </script>
 
 <StarsBackground />
+<CosmicComet />
 
 {#if screen === 'start'}
   <StartOverlay onplay={() => (screen = 'intro')} />
